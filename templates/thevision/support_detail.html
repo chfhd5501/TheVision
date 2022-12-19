@@ -1,0 +1,13 @@
+<div>
+    <p>이름 : {{ support.name }}</p>
+    <p>학과 : {{ support.department }}</p>
+    <p>학번 : {{ support.undergrad }}</p>
+    <p>비밀번호 : {{ support.password}}</p>
+    <p>전화번호 : {{ support.phone_number }}</p>
+    <p>분야 : {{ support.application_field }}</p>
+</div>
+
+<ul>
+    <a href="{% url 'thevision:insert' support.id %}"><button type="submit" class="btn btn-primary">승인</button></a>
+    <a href="{% url 'thevision:delete' support.id %}"><button type="submit" class="btn btn-primary">거절</button></a>
+</ul>

@@ -1,0 +1,10 @@
+<h1>지원 현황</h1>
+{% if support_list %}
+    <ul>
+        {% for support in support_list %}
+            <li><a href="{% url 'thevision:detail' support.id %}">{{ support.name }}</a></li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>지원자가 없습니다</p>
+{% endif %}

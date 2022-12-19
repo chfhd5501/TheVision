@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h5 class="my-3 border-bottom pb-2">지원서 작성</h5>
+    <form method="post" class="post-form my-3">
+        {% csrf_token %}
+        <!-- 오류 표시 Start -->
+        {% if form.errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for field in form %}
+                {% if field.errors %}
+                <strong>{{ field.label }}</strong>
+                {{ field.errors }}
+                {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+        <!-- 오류 표시 End-->
+        <div class="form-group">
+            <label for="name">이름</label>
+            <input type="text" class="form-control" name="name" id="name" value="{{ form.name.value|default_if_none:'' }}">
+        </div>
+        <div class="form-group">
+            <label for="department">학과</label>
+            <input type="text" class="form-control" name="department" id="department" value="{{ form.department.value|default_if_none:'' }}">
+        </div>
+        <div class="form-group">
+            <label for="undergrad">학번</label>
+            <input type="text" class="form-control" name="undergrad" id="undergrad" value="{{ form.undergrad.value|default_if_none:'' }}">
+        </div>
+         <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="text" class="form-control" name="password" id="password" value="{{ form.password.value|default_if_none:'' }}">
+        </div>
+         <div class="form-group">
+            <label for="phone_number">전화번호</label>
+            <input type="text" class="form-control" name="phone_number" id="phone_number" value="{{ form.phone_number.value|default_if_none:'' }}">
+        </div>
+           <div class="form-group">
+            <label for="application_field">분야</label>
+            <input type="text" class="form-control" name="application_field" id="application_field" value="{{ form.application_field.value|default_if_none:'' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">지원하기</button>
+    </form>
+</div>
+{% endblock %}
