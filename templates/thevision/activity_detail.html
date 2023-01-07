@@ -9,3 +9,7 @@
 <div>
     <p>신청 현황 : {{ activity.member }}</p>
 </div>
+
+<ul>
+    <a href="{% url 'thevision:delete2' activity.id %}"><button type="submit" class="btn btn-primary">삭제</button></a>
+</ul>

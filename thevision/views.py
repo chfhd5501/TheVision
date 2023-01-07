@@ -1,6 +1,7 @@
 import json
 import traceback
 from venv import logger
+from rest_framework import status
 
 from django.db.models.functions import datetime
 from django.http import JsonResponse, HttpResponse, Http404
@@ -15,20 +16,49 @@ from argon2 import PasswordHasher
 from django.db.models import Q
 
 def support_create(request):
-    if request.method=='POST':
-        form = SupportForm(request.POST)
-        if form.is_valid():
-            support = form.save(commit=False)
-            support.save()
-            id_data=support.id
-            password_hash=Support.objects.get(id=id_data)
-            password_hash.password=PasswordHasher().hash(password_hash.password)
-            password_hash.save()
-            return redirect('thevision:index')
-    else:
-        form = SupportForm()
-    context = {'form':form}
-    return render(request, 'thevision/support_form.html', context)
+    try:
+        if request.method=='POST':
+            form = SupportForm(request.POST)
+            if form.is_valid():
+                support = form.save(commit=False)
+                support.save()
+                id_data=support.id
+                password_hash=Support.objects.get(id=id_data)
+                password_hash.password=PasswordHasher().hash(password_hash.password)
+                password_hash.save()
+                data = {
+                    'message': '',
+                    'status': 'success'}
+                return HttpResponse(json.dumps(data, ensure_ascii=False), "application/json")
+                #return redirect('thevision:index')
+        else:
+            form = SupportForm()
+        context = {'form' : form }
+        return render(request, 'thevision/support_form.html', context) #프론트 url로 바꿔야함
+    #except KeyError:
+    except Exception as e:
+        trace_back = traceback.format_exc()
+        message = str(e) + "\n" + str(trace_back)
+        return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
+
+class SupportView(View):
+    model=Support
+    def post(self, request):
+        data = json.loads(request.body)
+        try:
+            Support.objects.create(
+                name = data['name'],
+                department = data['department'],
+                undergrad = data['undergrad'],
+                password = data['password'],
+                phone_number = data['phone_number'],
+                application_field = data['application_field']
+            )
+            return JsonResponse({"MESSAGE": "SUCCESS"}, status=201)
+        except Exception as e:
+            trace_back = traceback.format_exc()
+            message = str(e) + "\n" + str(trace_back)
+            return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
 
 
 def detail(request, support_id):
@@ -38,20 +68,24 @@ def detail(request, support_id):
         context = {'support': support}
     except Support.DoesNotExist:
         raise Http404("member does not exist")
-
     return render(request, 'thevision/support_detail.html', context)
 
-
 def index(request):
-    support_list = Support.objects.all()
-    context = {'support_list': support_list}
+    try:
+        support_list = Support.objects.all()
+        context = {'support_list': support_list}
+    except Support.DoesNotExist:
+        return HttpResponse({"message" : "model error"}, status=status.HTTP_404_NOT_FOUND)
     return render(request, 'thevision/support_list.html', context)
 
 
 def delete(request, support_id):
-    support = get_object_or_404(Support, pk=support_id)
-    support.delete()
-    return redirect('thevision:index')
+    try:
+        support = get_object_or_404(Support, pk=support_id)
+        support.delete()
+        return redirect('thevision:index')
+    except Support.DoesNotDelete:
+        return HttpResponse({"message": "delete error"}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 def insert(request, support_id):
     support = Support.objects.get(id=support_id)
@@ -71,27 +105,47 @@ def insert(request, support_id):
 
 
 def activity_create(request):
-    if request.method == 'POST':
-        form = ActivityForm(request.POST)
-        if form.is_valid():
-            activity = form.save(commit=False)
-            activity.save()
-            return redirect('thevision:activity_list')
-    else:
-        form = ActivityForm()
-    context = {'form': form}
-    return render(request, 'thevision/activity_form.html', context)
+    try:
+        if request.method == 'POST':
+            form = ActivityForm(request.POST)
+            if form.is_valid():
+                activity = form.save(commit=False)
+                activity.save()
+                return redirect('thevision:activity_list')
+        else:
+            form = ActivityForm()
+        context = {'form': form}
+        return render(request, 'thevision/activity_form.html', context)
+    except Exception as e:
+        trace_back = traceback.format_exc()
+        message = str(e) + "\n" + str(trace_back)
+        return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
 
 
 def activity_list(request):
-    activity_list = Activity.objects.all()
-    context = {'activity_list': activity_list}
+    try:
+        activity_list = Activity.objects.all()
+        context = {'activity_list': activity_list}
+    except Activity.DoesNotExist:
+        return HttpResponse({"message": "model error"}, status=status.HTTP_404_NOT_FOUND)
     return render(request, 'thevision/activity_list.html', context)
 
 def detail2(request, activity_id):
-    activity = Activity.objects.get(id=activity_id)
-    context = {'activity': activity}
+    try:
+        activity = Activity.objects.get(id=activity_id)
+        context = {'activity': activity}
+    except Support.DoesNotExist:
+        raise Http404("member does not exist")
     return render(request, 'thevision/activity_detail.html', context)
+
+def delete2(request, activity_id):
+    try:
+        activity = get_object_or_404(Activity, pk=activity_id)
+        activity.delete()
+        return redirect('thevision:activity_list')
+    except Activity.DoesNotDelete:
+        return HttpResponse({"message": "delete error"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ front로 데이터 전송
 @csrf_exempt
