@@ -1,5 +1,5 @@
 from django import forms
-from thevision.models import Support, Activity
+from thevision.models import Support, Question, Answer
 
 class SupportForm(forms.ModelForm):
     class Meta:
@@ -14,14 +14,25 @@ class SupportForm(forms.ModelForm):
             'application_field': '분야',
         }
 
-class ActivityForm(forms.ModelForm):
+class QuestionForm(forms.ModelForm):
     class Meta:
-        model = Activity
-        fields = ['subject', 'content', 'member']
+        model = Question
+        fields = ['subject', 'content']
         labels = {
             'subject': '제목',
             'content': '내용',
-            'member' : '참여자',
+        }
+        #widgets = {
+            #'subject' : forms.TextInput(attrs={'class':'form-control'}),
+            #'content' : forms.Textarea(attrs={'class':'form-control', 'rows':10}),
+        #}
+
+class AnswerForm(forms.ModelForm):
+    class Meta:
+        model = Answer
+        fields = ['content']
+        labels = {
+            'content': '답변 내용',
         }
 
 class SupportForm2(forms.ModelForm):

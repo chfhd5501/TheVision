@@ -9,9 +9,10 @@ from django.template import loader
 from django.views import View
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 
-from .models import Support, Group, Activity
-from .forms import SupportForm, ActivityForm, SupportForm2
+from .models import Support, Group, Question
+from .forms import SupportForm, QuestionForm, SupportForm2, AnswerForm
 from argon2 import PasswordHasher
 from django.db.models import Q
 
@@ -104,16 +105,17 @@ def insert(request, support_id):
     return redirect('thevision:index')
 
 
-def activity_create(request):
+def question_create(request):
     try:
         if request.method == 'POST':
-            form = ActivityForm(request.POST)
+            form = QuestionForm(request.POST)
             if form.is_valid():
-                activity = form.save(commit=False)
-                activity.save()
-                return redirect('thevision:activity_list')
+                question = form.save(commit=False)
+                question.create_date = timezone.now()
+                question.save()
+                return redirect('thevision:question_list')
         else:
-            form = ActivityForm()
+            form = QuestionForm()
         context = {'form': form}
         return render(request, 'thevision/activity_form.html', context)
     except Exception as e:
@@ -122,29 +124,50 @@ def activity_create(request):
         return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def activity_list(request):
+def question_list(request):
     try:
-        activity_list = Activity.objects.all()
-        context = {'activity_list': activity_list}
-    except Activity.DoesNotExist:
+        question_list = Question.objects.order_by('-create_date')
+        context = {'question_list': question_list}
+    except Question.DoesNotExist:
         return HttpResponse({"message": "model error"}, status=status.HTTP_404_NOT_FOUND)
     return render(request, 'thevision/activity_list.html', context)
 
-def detail2(request, activity_id):
+def detail2(request, question_id):
     try:
-        activity = Activity.objects.get(id=activity_id)
-        context = {'activity': activity}
+        question = Question.objects.get(id=question_id)
+        context = {'question': question}
     except Support.DoesNotExist:
         raise Http404("member does not exist")
     return render(request, 'thevision/activity_detail.html', context)
 
-def delete2(request, activity_id):
+def delete2(request, question_id):
     try:
-        activity = get_object_or_404(Activity, pk=activity_id)
-        activity.delete()
-        return redirect('thevision:activity_list')
-    except Activity.DoesNotDelete:
+        question = get_object_or_404(Question, pk=question_id)
+        question.delete()
+        return redirect('thevision:question_list')
+    except Question.DoesNotDelete:
         return HttpResponse({"message": "delete error"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+def answer_create(request, question_id):
+    try:
+        question = get_object_or_404(Question, pk=question_id)
+        if request.method == 'POST':
+            form = AnswerForm(request.POST)
+            if form.is_valid():
+                answer = form.save(commit=False)
+                answer.create_date = timezone.now()
+                answer.question = question
+                answer.save()
+                return redirect('thevision:detail2', question_id=question_id)
+        else:
+            form = AnswerForm()
+        context = {'question' : question, 'form' : form}
+        return render(request, 'thevision/activity_detail.html', context)
+    except Exception as e:
+        trace_back = traceback.format_exc()
+        message = str(e) + "\n" + str(trace_back)
+        return JsonResponse({"message": message}, status=status.HTTP_400_BAD_REQUEST)
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ front로 데이터 전송
@@ -220,9 +243,3 @@ def message(request):
                     'buttons':['1','2','3','4']
             }
     })
-
-@csrf_exempt
-def Time_Request(request):
-    now = datetime.datetime.now()
-    context = {'msg' : now.strftime('%Y-%m-%d %H:%M:%S')}
-    return HttpResponse(json.dumps(context), "application/json")

@@ -10,12 +10,12 @@ urlpatterns = [
     path('support_list/', views.index, name='index'),
     path('support_list/delete/<int:support_id>/', views.delete, name='delete'),
     path('support_list/insert/<int:support_id>/', views.insert, name='insert'),
-    path('activity/', views.activity_create, name='activity_create'),
-    path('activity_list/', views.activity_list, name='activity_list'),
-    path('activity_list/<int:activity_id>/', views.detail2, name='detail2'),
-    path('activity_list/delete/<int:activity_id>/', views.delete2, name='delete2'),
+    path('activity/', views.question_create, name='question_create'),
+    path('activity_list/', views.question_list, name='question_list'),
+    path('activity_list/<int:question_id>/', views.detail2, name='detail2'),
+    path('activity_list/delete/<int:question_id>/', views.delete2, name='delete2'),
+    path('answer/create/<int:question_id>/', views.answer_create, name='answer_create'),
     path('test/fetch/', views.support_fetch, name='fetch'),
     path('save/', views.support_save, name='save'),
     path('json/', views.json_Data),
-    path('Time_Request/', views.Time_Request)
 ]
