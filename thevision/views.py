@@ -16,6 +16,7 @@ from .forms import SupportForm, QuestionForm, SupportForm2, AnswerForm
 from argon2 import PasswordHasher
 from django.db.models import Q
 
+@csrf_exempt
 def support_create(request):
     try:
         if request.method=='POST':
