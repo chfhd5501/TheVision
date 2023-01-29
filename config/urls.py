@@ -17,7 +17,12 @@ from django.contrib import admin
 from django.urls import path, include
 from thevision import views
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('thevision/', include('thevision.urls')),
+    path('common/', include('common.urls')),
+    #path('', views.index, name='index'),
+    path('', views.question_list, name='question_list'),
+
 ]

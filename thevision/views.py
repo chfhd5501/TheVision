@@ -1,6 +1,9 @@
 import json
+import string
 import traceback
 from venv import logger
+
+import common.forms
 from rest_framework import status
 
 from django.db.models.functions import datetime
@@ -15,6 +18,10 @@ from .models import Support, Group, Question
 from .forms import SupportForm, QuestionForm, SupportForm2, AnswerForm
 from argon2 import PasswordHasher
 from django.db.models import Q
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
 
 @csrf_exempt
 def support_create(request):
@@ -25,14 +32,14 @@ def support_create(request):
                 support = form.save(commit=False)
                 support.save()
                 id_data=support.id
-                password_hash=Support.objects.get(id=id_data)
-                password_hash.password=PasswordHasher().hash(password_hash.password)
-                password_hash.save()
+                #password_hash=Support.objects.get(id=id_data)
+                #password_hash.password=PasswordHasher().hash(password_hash.password)
+                #password_hash.save()
                 data = {
                     'message': '',
                     'status': 'success'}
-                return HttpResponse(json.dumps(data, ensure_ascii=False), "application/json")
-                #return redirect('thevision:index')
+                #return HttpResponse(json.dumps(data, ensure_ascii=False), "application/json")
+                return redirect('thevision:question_list')
         else:
             form = SupportForm()
         context = {'form' : form }
@@ -103,15 +110,17 @@ def insert(request, support_id):
                   phone_number=phone_number, application_field=application_field)
     group_data.save()
     support.delete()
-    return redirect('thevision:index')
+    return redirect('thevision:question_list')
 
 
+@login_required(login_url='common:login')
 def question_create(request):
     try:
         if request.method == 'POST':
             form = QuestionForm(request.POST)
             if form.is_valid():
                 question = form.save(commit=False)
+                question.author = request.user
                 question.create_date = timezone.now()
                 question.save()
                 return redirect('thevision:question_list')
@@ -127,8 +136,11 @@ def question_create(request):
 
 def question_list(request):
     try:
+        page = request.GET.get('page','1')
         question_list = Question.objects.order_by('-create_date')
-        context = {'question_list': question_list}
+        paginator = Paginator(question_list, 10)
+        page_obj = paginator.get_page(page)
+        context = {'question_list': page_obj}
     except Question.DoesNotExist:
         return HttpResponse({"message": "model error"}, status=status.HTTP_404_NOT_FOUND)
     return render(request, 'thevision/activity_list.html', context)
@@ -149,7 +161,35 @@ def delete2(request, question_id):
     except Question.DoesNotDelete:
         return HttpResponse({"message": "delete error"}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
+@login_required(login_url='common:login')
+def question_modify(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    if request.user != question.author:
+        messages.error(request, '수정 권한이 없습니다')
+        return redirect('thevision:detail2', question_id=question_id)
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.author = request.user
+            question.modify_date = timezone.now()
+            question.save()
+            return redirect('thevision:detail2', question_id=question_id)
+    else:
+        form = QuestionForm(instance=question)
+    context = {'form' : form}
+    return render(request, 'thevision/activity_form.html', context)
 
+@login_required(login_url='common:login')
+def question_delete(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    if request.user != question.author:
+        messages.error(request, '삭제 권한이 없습니다')
+        return redirect('thevision:detail2', question_id=question_id)
+    question.delete()
+    return redirect('thevision:activity_list')
+
+@login_required(login_url='common:login')
 def answer_create(request, question_id):
     try:
         question = get_object_or_404(Question, pk=question_id)
@@ -157,6 +197,7 @@ def answer_create(request, question_id):
             form = AnswerForm(request.POST)
             if form.is_valid():
                 answer = form.save(commit=False)
+                answer.author = request.user
                 answer.create_date = timezone.now()
                 answer.question = question
                 answer.save()
